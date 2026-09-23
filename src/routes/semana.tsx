@@ -43,6 +43,8 @@ const CAMPOS_PAINEL: { key: keyof PainelSemanal; label: string }[] = [
   { key: "reparacoesCurtas", label: "Reparações curtas" },
 ];
 
+const CAMPOS_AUTO: (keyof PainelSemanal)[] = ["episodios", "episodiosPausa15", "a", "b", "c"];
+
 function SemanaAtual() {
   const { state } = useStore();
   const { setWeek } = useActions();
@@ -95,17 +97,25 @@ function SemanaAtual() {
 
       <Panel className="mb-6" title="Painel de evolução" subtitle="Números observados nesta semana.">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {CAMPOS_PAINEL.map((c) => (
-            <label key={c.key} className="grid gap-2">
-              <span className="text-xs text-muted-foreground">{c.label}</span>
-              <Input
-                type="number"
-                min={0}
-                value={painel[c.key]}
-                onChange={(e) => setWeek(semana, { painel: { ...painel, [c.key]: Number(e.target.value) || 0 } })}
-              />
-            </label>
-          ))}
+          {CAMPOS_PAINEL.map((c) => {
+            const auto = CAMPOS_AUTO.includes(c.key);
+            return (
+              <label key={c.key} className="grid gap-2">
+                <span className="text-xs text-muted-foreground">{c.label}</span>
+                <Input
+                  type="number"
+                  min={0}
+                  value={painel[c.key]}
+                  onChange={(e) => setWeek(semana, { painel: { ...painel, [c.key]: Number(e.target.value) || 0 } })}
+                />
+                {auto ? (
+                  <span className="text-[0.68rem] leading-snug text-muted-foreground">
+                    Preenchido automaticamente pelos episódios do Diário — não precisa digitar de novo.
+                  </span>
+                ) : null}
+              </label>
+            );
+          })}
         </div>
       </Panel>
 

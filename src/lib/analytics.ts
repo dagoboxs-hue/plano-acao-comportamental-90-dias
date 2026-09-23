@@ -58,6 +58,21 @@ export function deriveWeek(state: AppState, week: number): WeeklyAnalytics {
   return result;
 }
 
+export function mergedPainel(state: AppState, week: number, manual: PainelSemanal): PainelSemanal {
+  const derived = deriveWeek(state, week);
+  const hasRealEpisodes = derived.episodios > 0;
+  return {
+    ...manual,
+    // Quando ha episodios reais registrados no Diario/protocolos, eles prevalecem
+    // sobre a digitacao manual para evitar dado duplicado e desatualizado.
+    episodios: hasRealEpisodes ? derived.episodios : manual.episodios,
+    episodiosPausa15: hasRealEpisodes ? derived.episodiosPausa15 : manual.episodiosPausa15,
+    a: hasRealEpisodes ? derived.a : manual.a,
+    b: hasRealEpisodes ? derived.b : manual.b,
+    c: hasRealEpisodes ? derived.c : manual.c,
+  };
+}
+
 export function deriveAllWeeks(state: AppState) {
   const weeks = new Set<number>();
   for (const incident of state.incidents) weeks.add(weekOfDate(state.startDate, incident.date));

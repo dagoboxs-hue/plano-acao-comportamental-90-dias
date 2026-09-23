@@ -1,5 +1,6 @@
 import type { AppState, WeekEntry } from "./store";
 import { pct, scorecardTotal } from "./store";
+import { mergedPainel } from "./analytics";
 
 export type KpiPoint = { semana: number; valor: number | null };
 
@@ -21,7 +22,10 @@ function weeksOrdered(state: AppState): WeekEntry[] {
 }
 
 function serieFrom(state: AppState, fn: (w: WeekEntry) => number | null): KpiPoint[] {
-  return weeksOrdered(state).map((w) => ({ semana: w.week, valor: fn(w) }));
+  return weeksOrdered(state).map((w) => ({
+    semana: w.week,
+    valor: fn({ ...w, painel: mergedPainel(state, w.week, w.painel) }),
+  }));
 }
 
 function last(serie: KpiPoint[]): number | null {
