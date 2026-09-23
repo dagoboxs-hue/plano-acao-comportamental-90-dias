@@ -1,8 +1,21 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Note, PageHeader, Panel } from "@/components/ui-bits";
 import { SEMAFORO } from "@/lib/content";
 import { useActions, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+
+const protocoloPorCategoria: Record<string, string> = {
+  silencio: "Silêncio",
+  limites: "Não",
+  ajuda: "Solucionador",
+  reparacao: "Reparação",
+  mensagens: "Mensagens",
+  culpa: "Culpa",
+  rotina: "Rotina",
+  futuro: "Futuro",
+  privacidade: "Privacidade",
+  psicologizacao: "Fato, interpretação e hipótese",
+};
 
 export const Route = createFileRoute("/semaforo")({
   head: () => ({
@@ -73,8 +86,20 @@ function Semaforo() {
                     );
                   })}
                 </div>
+              {atual === "amarelo" ? (
+                <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg bg-attention-soft px-3 py-3 text-sm text-attention-foreground">
+                  <span>Aplicar protocolo recomendado: {protocoloPorCategoria[cat.id] ?? "modo guiado"}.</span>
+                  <Link to="/protocolos" className="font-semibold underline underline-offset-4">Abrir protocolo</Link>
+                </div>
+              ) : null}
+              {atual === "vermelho" ? (
+                <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg bg-stop-soft px-3 py-3 text-sm text-stop">
+                  <span>Regular antes de agir.</span>
+                  <Link to="/ativado" className="font-semibold underline underline-offset-4">REGULAR ANTES DE AGIR</Link>
+                </div>
+              ) : null}
               </li>
-            );
+          );
           })}
         </ul>
       </Panel>

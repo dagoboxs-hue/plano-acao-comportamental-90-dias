@@ -120,6 +120,26 @@ export type ProtocolRun = {
   regulacao: string;
   reavaliacao: string;
   nota: string;
+  pauseStartedAt?: string;
+  pauseEndedAt?: string;
+  durationMin?: number | null;
+};
+
+export type ActiveProtocolDraft = {
+  step: number;
+  startedAt: string;
+  emocao: string;
+  intensidadeInicial: number;
+  fato: string;
+  interpretacao: string;
+  hipoteses: string;
+  necessidade: "acao" | "desconforto" | "";
+  regulacao: string;
+  regulationStartedAt?: string;
+  pauseStartedAt?: string;
+  pauseEndedAt?: string;
+  intensidadeFinal: number;
+  reavaliacao: "sim" | "nao" | "";
 };
 
 export type IncidentDraft = Partial<Omit<Incident, "id" | "createdAt">>;
@@ -136,6 +156,7 @@ export type AppState = {
   protocolLogs: ProtocolLog[];
   protocolRuns: ProtocolRun[];
   incidentDraft: IncidentDraft | null;
+  activeProtocolDraft: ActiveProtocolDraft | null;
   fechamento: Record<string, string>;
 };
 
@@ -151,6 +172,7 @@ export const initialState: AppState = {
   protocolLogs: [],
   protocolRuns: [],
   incidentDraft: null,
+  activeProtocolDraft: null,
   fechamento: {},
 };
 
@@ -196,6 +218,8 @@ function migrate(raw: unknown): AppState {
     protocolLogs: Array.isArray(s.protocolLogs) ? s.protocolLogs : [],
     protocolRuns: Array.isArray(s.protocolRuns) ? s.protocolRuns : [],
     incidentDraft: s.incidentDraft && typeof s.incidentDraft === "object" ? s.incidentDraft : null,
+    activeProtocolDraft:
+      s.activeProtocolDraft && typeof s.activeProtocolDraft === "object" ? s.activeProtocolDraft : null,
     fechamento: s.fechamento && typeof s.fechamento === "object" ? s.fechamento : {},
   };
 }
@@ -310,6 +334,9 @@ export function useActions() {
           ),
         })),
       setIncidentDraft: (draft: IncidentDraft | null) => setState((s) => ({ ...s, incidentDraft: draft })),
+      setActiveProtocolDraft: (draft: ActiveProtocolDraft | null) =>
+        setState((s) => ({ ...s, activeProtocolDraft: draft })),
+      clearActiveProtocolDraft: () => setState((s) => ({ ...s, activeProtocolDraft: null })),
       setFechamento: (key: string, val: string) =>
         setState((s) => ({ ...s, fechamento: { ...s.fechamento, [key]: val } })),
     }),

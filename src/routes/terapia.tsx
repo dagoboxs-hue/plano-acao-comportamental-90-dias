@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { EmptyState, Note, PageHeader, Panel } from "@/components/ui-bits";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TEMAS_TERAPIA } from "@/lib/content";
 import { useStore } from "@/lib/store";
@@ -19,6 +20,17 @@ export const Route = createFileRoute("/terapia")({
 function Terapia() {
   const { state } = useStore();
   const marcados = state.incidents.filter((i) => i.terapia);
+  const resumo = [
+    "RESUMO PARA A PRÓXIMA SESSÃO",
+    `Episódios selecionados: ${marcados.length}`,
+    `Categorias: ${[...new Set(marcados.map((i) => i.categoria))].join(", ") || "Ainda não registrados"}`,
+    `Intensidades: ${marcados.map((i) => `${i.intensidade}/10`).join(", ") || "Ainda não registradas"}`,
+    `Fatos: ${marcados.map((i) => i.fato).filter(Boolean).join(" | ") || "Ainda não registrados"}`,
+    `Interpretações: ${marcados.map((i) => i.interpretacao).filter(Boolean).join(" | ") || "Ainda não registradas"}`,
+    `O que foi feito: ${marcados.map((i) => i.oQueFiz).filter(Boolean).join(" | ") || "Ainda não registrado"}`,
+    `O que pareceu ajudar: ${marcados.map((i) => i.aprendi).filter(Boolean).join(" | ") || "Ainda não registrado"}`,
+    `Questões registradas: ${marcados.map((i) => i.testar).filter(Boolean).join(" | ") || "Ainda não registradas"}`,
+  ].join("\n");
 
   return (
     <div>
@@ -36,6 +48,11 @@ function Terapia() {
             </li>
           ))}
         </ul>
+      </Panel>
+
+      <Panel className="mb-6" title="Resumo para a próxima sessão" subtitle="Somente episódios marcados para levar à terapia; sem diagnóstico ou interpretação adicional.">
+        <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">{resumo}</pre>
+        <Button className="mt-4" onClick={() => void navigator.clipboard?.writeText(resumo)}>COPIAR RESUMO</Button>
       </Panel>
 
       <Panel title={`Episódios marcados (${marcados.length})`}>

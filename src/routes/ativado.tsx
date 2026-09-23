@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Note } from "@/components/ui-bits";
-import { useActions } from "@/lib/store";
+import { pauseBandFromMinutes } from "@/lib/analytics";
+import { useActions, useStore, type ActiveProtocolDraft } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -67,14 +68,26 @@ const inicial: Form = {
 
 function ModoAtivado() {
   const navigate = useNavigate();
-  const { logProtocolRun, setIncidentDraft } = useActions();
-  const [step, setStep] = useState(1);
-  const [f, setF] = useState<Form>(inicial);
+  const { state } = useStore();
+  const { logProtocolRun, setIncidentDraft, setActiveProtocolDraft, clearActiveProtocolDraft } = useActions();
+  const [step, setStep] = useState(state.activeProtocolDraft?.step ?? 1);
+  const [f, setF] = useState<Form>(() => ({ ...inicial, ...(state.activeProtocolDraft ?? {}) }));
+  const [startedAt] = useState(state.activeProtocolDraft?.startedAt ?? new Date().toISOString());
+  const [pauseStartedAt, setPauseStartedAt] = useState(state.activeProtocolDraft?.pauseStartedAt);
+  const [pauseEndedAt, setPauseEndedAt] = useState(state.activeProtocolDraft?.pauseEndedAt);
+  const [regulationStartedAt, setRegulationStartedAt] = useState(state.activeProtocolDraft?.regulationStartedAt);
   const [concluido, setConcluido] = useState(false);
 
-  const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((p) => ({ ...p, [k]: v }));
+  useEffect(() => {
+    if (concluido) return;
+    setActiveProtocolDraft({ ...f, step, startedAt, pauseStartedAt, pauseEndedAt, regulationStartedAt });
+  }, [f, step, startedAt, pauseStartedAt, pauseEndedAt, regulationStartedAt, concluido, setActiveProtocolDraft]);
+
+  const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((p) => ({ ...p, ...(k === "intensidadeInicial" && !p.intensidadeFinal ? { intensidadeFinal: v as number } : {}), [k]: v }));
 
   const concluir = () => {
+    const ended = pauseEndedAt ?? new Date().toISOString();
+    const durationMin = pauseStartedAt ? Math.max(0, Math.round((new Date(ended).getTime() - new Date(pauseStartedAt).getTime()) / 60000)) : null;
     logProtocolRun({
       protocolo: "Protocolo de ativação",
       emocao: f.emocao,
@@ -87,7 +100,11 @@ function ModoAtivado() {
       regulacao: f.regulacao,
       reavaliacao: f.reavaliacao === "sim" ? "Necessidade objetiva" : f.reavaliacao === "nao" ? "Voltei ao meu dia" : "",
       nota: "",
+      pauseStartedAt,
+      pauseEndedAt: pauseEndedAt ?? undefined,
+      durationMin,
     });
+    clearActiveProtocolDraft();
     setConcluido(true);
   };
 
@@ -99,7 +116,12 @@ function ModoAtivado() {
       intensidade: f.intensidadeInicial,
       oQueFiz: f.regulacao ? `Protocolo de ativação · ${f.regulacao}` : "Protocolo de ativação",
       aprendi: `Intensidade ${f.intensidadeInicial}/10 → ${f.intensidadeFinal}/10.`,
-      pausa: "15–30 min",
+      ...(pauseStartedAt && pauseEndedAt
+        ? { pausa: pauseBandFromMinutes(Math.max(0, (new Date(pauseEndedAt).getTime() - new Date(pauseStartedAt).getTime()) / 60000)) }
+        : {}),
+      ...(pauseStartedAt && pauseEndedAt
+        ? { duracaoMin: Math.max(0, Math.round((new Date(pauseEndedAt).getTime() - new Date(pauseStartedAt).getTime()) / 60000)) }
+        : {}),
     });
     void navigate({ to: "/diario" });
   };
@@ -148,11 +170,11 @@ function ModoAtivado() {
           />
         ) : (
           <div key={step} className="rise-in flex flex-1 flex-col">
-            {step === 1 ? <Parar onNext={() => setStep(2)} /> : null}
+            {step === 1 ? <Parar onNext={() => { const now = new Date().toISOString(); setPauseStartedAt(now); setStep(2); }} /> : null}
             {step === 2 ? <Nomear f={f} set={set} onNext={() => setStep(3)} /> : null}
             {step === 3 ? <Separar f={f} set={set} onNext={() => setStep(4)} /> : null}
             {step === 4 ? <Verificar f={f} set={set} onNext={() => setStep(5)} /> : null}
-            {step === 5 ? <Regular f={f} set={set} onNext={() => setStep(6)} /> : null}
+            {step === 5 ? <Regular f={f} set={set} onNext={() => { const now = new Date().toISOString(); setRegulationStartedAt(now); setPauseEndedAt(now); setStep(6); }} /> : null}
             {step === 6 ? <Reavaliar f={f} set={set} onConcluir={concluir} /> : null}
           </div>
         )}

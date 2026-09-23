@@ -29,6 +29,7 @@ function Hoje() {
   const dia = dayNumber(state.startDate);
   const semana = weekNumber(state.startDate);
   const foco = SEMANAS.find((s) => s.n === semana);
+  const focoEscolhido = state.weeks[semana - 1]?.focoProxima?.trim();
   const day = state.days[date];
   const [novoItem, setNovoItem] = useState("");
 
@@ -45,8 +46,9 @@ function Hoje() {
       />
 
       <Panel className="mb-5 border-primary/25 bg-primary-soft/60">
-        <p className="eyebrow">Foco da semana {semana}</p>
-        <p className="mt-2 text-lg font-medium text-foreground">{foco?.foco}</p>
+        <p className="eyebrow">Foco escolhido para esta semana</p>
+        <p className="mt-2 text-lg font-medium text-foreground">{focoEscolhido || foco?.foco}</p>
+        {focoEscolhido ? <p className="mt-2 text-xs text-muted-foreground">Tema da semana: {foco?.foco}</p> : null}
       </Panel>
 
       <Panel className="mb-5" title="Como estou agora?" subtitle="Escala de 0 a 10. Serve para observar, não para julgar.">
@@ -89,7 +91,7 @@ function Hoje() {
           </div>
         ) : null}
         <div className="mt-4">
-          <Link to="/protocolos">
+          <Link to="/ativado">
             <Button variant="secondary" size="lg" className="w-full sm:w-auto">
               Estou ativado agora
             </Button>
