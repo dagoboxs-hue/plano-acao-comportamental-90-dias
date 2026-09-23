@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { EmptyState, Note, PageHeader, Panel } from "@/components/ui-bits";
 import { CATEGORIAS_INCIDENTE, FAIXAS_PAUSA, type FaixaPausa } from "@/lib/content";
-import { todayISO, useActions, useStore, type Autonomia, type Incident } from "@/lib/store";
+import { todayISO, useActions, useStore, weekOfDate, type Autonomia, type Incident } from "@/lib/store";
+import { deriveWeek } from "@/lib/analytics";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 
@@ -49,7 +50,7 @@ const vazio = (): Omit<Incident, "id" | "createdAt"> => ({
 
 function Diario() {
   const { state } = useStore();
-  const { addIncident, updateIncident, removeIncident, setIncidentDraft } = useActions();
+  const { addIncident, updateIncident, removeIncident, setIncidentDraft, setWeek } = useActions();
   const [form, setForm] = useState(vazio());
   const draft = state.incidentDraft;
 
@@ -80,9 +81,26 @@ function Diario() {
           className="grid gap-5"
           onSubmit={(e) => {
             e.preventDefault();
-            addIncident({ ...form, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
+            const inc: Incident = { ...form, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+            addIncident(inc);
+            const semana = weekOfDate(state.startDate, inc.date);
+            if (semana > 0) {
+              const nextState = { ...state, incidents: [inc, ...state.incidents] };
+              const d = deriveWeek(nextState, semana);
+              const painelAtual = state.weeks[semana]?.painel;
+              setWeek(semana, {
+                painel: {
+                  ...(painelAtual ?? {}),
+                  episodios: d.episodios,
+                  episodiosPausa15: d.episodiosPausa15,
+                  a: d.a,
+                  b: d.b,
+                  c: d.c,
+                } as typeof painelAtual extends undefined ? never : NonNullable<typeof painelAtual>,
+              });
+            }
             setForm(vazio());
-            toast.success("Episódio registrado.");
+            toast.success("Episódio registrado. Painel da semana atualizado.");
           }}
         >
           <div className="grid gap-4 sm:grid-cols-2">
